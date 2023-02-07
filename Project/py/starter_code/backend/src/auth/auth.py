@@ -1,5 +1,5 @@
 import json
-from flask import request, _request_ctx_stack
+from flask import request, _request_ctx_stack, abort
 from functools import wraps
 from jose import jwt
 from urllib.request import urlopen
@@ -73,11 +73,7 @@ def get_token_auth_header():
     it should raise an AuthError if the requested permission string is not in the payload permissions array
     return true otherwise
 '''
-def check_permissions(permission, payload):
-    permissions = payload.get('permissions')
-    if not permissions or permission not in permissions:
-        raise AuthError('unauthorized', 403)
-    return True
+
 
 '''
 @TODO implement verify_decode_jwt(token) method
@@ -150,12 +146,33 @@ def verify_decode_jwt(token):
     it should use the check_permissions method validate claims and check the requested permission
     return the decorator which passes the decoded payload to the decorated method
 '''
+
+# def check_permissions(permission, payload):
+#     permissions = payload.get('permissions')
+#     if not permissions or permission not in permissions:
+#         raise AuthError('unauthorized', 403)
+#     return True
+
+
+def check_permissions(permission, payload):
+    if 'permissions' not in payload:
+        abort(400)
+    
+    if permission not in payload['permissions']:
+        abort(403)
+    
+    return True
+
 def requires_auth(permission=''):
     def requires_auth_decorator(f):
         @wraps(f)
         def wrapper(*args, **kwargs):
             token = get_token_auth_header()
-            payload = verify_decode_jwt(token)
+            try:
+                payload = verify_decode_jwt(token)
+                
+            except:
+                abort(401)
             check_permissions(permission, payload)
             return f(payload, *args, **kwargs)
 

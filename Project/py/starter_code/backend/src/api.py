@@ -7,7 +7,7 @@ from flask_cors import CORS
 from .database.models import db_drop_and_create_all, setup_db, Drink
 from .auth.auth import AuthError, requires_auth
 
-app = Flask(__all__)
+app = Flask(__name__)
 setup_db(app)
 CORS(app)
 
@@ -29,7 +29,8 @@ CORS(app)
         or appropriate status code indicating reason for failure
 '''
 @app.route('/drinks')
-def getDrinks():
+@requires_auth('get:drinks')
+def getDrinks(jwt):
     try:
         drinks = Drink.query.all()
         drinks = [drink.short() for drink in drinks]
@@ -58,6 +59,7 @@ def get_drink_details(payload):
         drinks = [drink.long() for drink in drinks]
         return jsonify({
             'success': True,
+            'status_code': 200,
             'drinks': drinks
         })#, 200
     except Exception:
